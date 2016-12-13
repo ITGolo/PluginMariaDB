@@ -16,6 +16,7 @@ repositories {
 dependencies {
     mariadb group: 'commons-io', name: 'commons-io', version: '2.5'
     mariadb group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.21'
+    compile group: 'org.flywaydb', name: 'flyway-core', version: '4.0.3'
     compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.21'
     compile group: 'org.mariadb.jdbc', name: 'mariadb-java-client', version: '1.5.5'
     compile group: 'commons-dbutils', name: 'commons-dbutils', version: '1.6'
@@ -30,6 +31,16 @@ jar {
         copy {
             into "G:\\BIBLIOTEKI\\Releases"
             from "$buildDir\\libs\\${project.name}-${version}.jar"
+        }
+    }
+}
+
+sourceSets {
+    main {
+        resources {
+            srcDirs = ["src/main/java", "src/main/resources"]
+            includes = ["**/*.fxml", "**/*.xml", "**/*.properties", "**/*.css", "**/*.json", "**/*.sql",
+                        "**/*.png", "**/*.gif", "**/*.jpg", "**/*.ico", "**/*.html", "**/*.js",]
         }
     }
 }

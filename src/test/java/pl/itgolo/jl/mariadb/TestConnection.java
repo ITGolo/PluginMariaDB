@@ -20,32 +20,34 @@ import java.util.Map;
  */
 public class TestConnection {
 
+    static String resource = "pl/itgolo/jl/mariadb/Migrations/Examples";
     static String address = "localhost";
     static Integer port = 7777;
     static String name = "myDatabase";
     static String username = "administrator";
     static String password = "root";
     static String path = "database";
+    static String version = "1.0.0.1";
 
     @BeforeClass
-    public static void setUp() throws ManagedProcessException, IOException, DatabaseSuperAdminException, DatabaseServerStartException, DatabaseCreateException, DatabaseServerPortException, DatabaseServerDoubleRunningException, DatabasePermissionDirectoryException {
+    public static void setUp() throws ManagedProcessException, IOException, DatabaseSuperAdminException, DatabaseServerStartException, DatabaseCreateException, DatabaseServerPortException, DatabaseServerDoubleRunningException, DatabasePermissionDirectoryException, DatabaseMigrationsException {
         Manager.deleteAllDatabases(path);
-        DB db = Server.start(path, port, name, username, password);
+        DB db = Server.start(path, port, name, username, password, resource, true);
     }
 
     @Test(expected = DatabaseConnectionException.class)
-    public void test_check_no_running_server_mariadb() throws DatabaseConnectionException, DatabaseUnknownException, DatabaseExistException, DatabaseAuthorizationException {
-        Connector.open("incorrect_address", port, name, username, password);
+    public void test_check_no_running_server_mariadb() throws DatabaseConnectionException, DatabaseUnknownException, DatabaseExistException, DatabaseAuthorizationException, DatabaseVersionException, DatabaseMigrationsException, DatabaseCompatibilityException {
+        Connector.open("incorrect_address", port, name, username, password, null, false);
     }
 
     @Test(expected = DatabaseExistException.class)
-    public void test_check_exist_database() throws DatabaseConnectionException, DatabaseUnknownException, IOException, ManagedProcessException, DatabaseExistException, DatabaseAuthorizationException {
-        Connector.open(address, port, "incorrect_name", username, password);
+    public void test_check_exist_database() throws DatabaseConnectionException, DatabaseUnknownException, IOException, ManagedProcessException, DatabaseExistException, DatabaseAuthorizationException, DatabaseVersionException, DatabaseMigrationsException, DatabaseCompatibilityException {
+        Connector.open(address, port, "incorrect_name", username, password, null, false);
     }
 
     @Test(expected = DatabaseAuthorizationException.class)
-    public void test_connection_to_database_with_incorrect_username() throws IOException, ManagedProcessException, DatabaseUnknownException, DatabaseExistException, DatabaseConnectionException, SQLException, DatabaseAuthorizationException {
-       Connector.open(address, port, name, "incorrect_username", password);
+    public void test_connection_to_database_with_incorrect_username() throws IOException, ManagedProcessException, DatabaseUnknownException, DatabaseExistException, DatabaseConnectionException, SQLException, DatabaseAuthorizationException, DatabaseVersionException, DatabaseMigrationsException, DatabaseCompatibilityException {
+       Connector.open(address, port, name, "incorrect_username", password, null, false);
     }
 
     @Test
@@ -61,8 +63,8 @@ public class TestConnection {
     }
 
     @Test
-    public void test_connection_to_database_with_correct_username() throws IOException, ManagedProcessException, DatabaseUnknownException, DatabaseExistException, DatabaseConnectionException, SQLException, DatabaseAuthorizationException {
-        Connection connection = Connector.open(address, port, name, username, password);
+    public void test_connection_to_database_with_correct_username() throws IOException, ManagedProcessException, DatabaseUnknownException, DatabaseExistException, DatabaseConnectionException, SQLException, DatabaseAuthorizationException, DatabaseVersionException, DatabaseMigrationsException, DatabaseCompatibilityException {
+        Connection connection = Connector.open(address, port, name, username, password, null, false);
         QueryRunner queryRunner = new QueryRunner();
 
         List results = queryRunner.query(connection, "select user, password, host from mysql.user", new MapListHandler());
@@ -70,5 +72,16 @@ public class TestConnection {
             Map map = (Map) result;
             System.out.println(String.format("user: %1$s, password: %2$s, host: %3$s", map.get("user"), map.get("password"), map.get("host")));
         });
+    }
+
+    @Test(expected = DatabaseCompatibilityException.class)
+    public void test_connection_compatibility_database_old_version_application() throws IOException, ManagedProcessException, DatabaseUnknownException, DatabaseExistException, DatabaseConnectionException, SQLException, DatabaseAuthorizationException, DatabaseVersionException, DatabaseCompatibilityException {
+        Connector.open(address, port, name, username, password, "1.0.0.0", true);
+    }
+
+    @Test()
+    public void test_connection_compatibility_database() throws IOException, ManagedProcessException, DatabaseUnknownException, DatabaseExistException, DatabaseConnectionException, SQLException, DatabaseAuthorizationException, DatabaseVersionException, DatabaseCompatibilityException {
+        Connection connection =  Connector.open(address, port, name, username, password, version, true);
+        Assert.assertNotNull(connection);
     }
 }

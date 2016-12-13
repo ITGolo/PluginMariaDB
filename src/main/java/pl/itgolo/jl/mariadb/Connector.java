@@ -3,10 +3,7 @@ package pl.itgolo.jl.mariadb;
 import org.apache.commons.dbutils.DbUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import pl.itgolo.jl.mariadb.Exceptions.DatabaseAuthorizationException;
-import pl.itgolo.jl.mariadb.Exceptions.DatabaseConnectionException;
-import pl.itgolo.jl.mariadb.Exceptions.DatabaseExistException;
-import pl.itgolo.jl.mariadb.Exceptions.DatabaseUnknownException;
+import pl.itgolo.jl.mariadb.Exceptions.*;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -28,18 +25,29 @@ public class Connector {
      * @param name     name to database
      * @param username username to database
      * @param password password to database
+     * @param version  version application
+     * @param validateVersion validate version application to version database
      * @return connection to database
-     * @throws DatabaseConnectionException failed connection to server database
-     * @throws DatabaseUnknownException unknown failed connection to server database
-     * @throws DatabaseExistException database not exist
+     * @throws DatabaseConnectionException    failed connection to server database
+     * @throws DatabaseUnknownException       unknown failed connection to server database
+     * @throws DatabaseExistException         database not exist
      * @throws DatabaseAuthorizationException failed authorization to database
+     * @throws DatabaseVersionException    failed get version from table 'schema_version'
+     * @throws DatabaseCompatibilityException no compatibility versions database
      */
-    public static Connection open(String address, Integer port, String name, String username, String password) throws DatabaseConnectionException, DatabaseUnknownException, DatabaseExistException, DatabaseAuthorizationException {
+    public static Connection open(String address, Integer port, String name, String username, String password, String version, Boolean validateVersion) throws DatabaseConnectionException, DatabaseUnknownException, DatabaseExistException, DatabaseAuthorizationException, DatabaseVersionException, DatabaseCompatibilityException {
         String connectionString = String.format("jdbc:mysql://%1$s:%2$s/%3$s", address, port, name);
         try {
-            return DriverManager.getConnection(connectionString, username, password);
-        } catch (Throwable e) {
-            Distributor.connection(e, address, port, name, username, password);
+            Connection connection = DriverManager.getConnection(connectionString, username, password);
+            if (validateVersion){
+                String versionDatabase = Database.getVersion(connection, address, port, name, username, password);
+                if (version.equals(versionDatabase) == false){
+                    throw new DatabaseCompatibilityException(String.format("No compatibility versions database. Version application: %1$s, version database: %2$s, address: %3$s, port: %4$s, name: %5$s, username: %6$s, password: %7$s.", version, versionDatabase, address, port, name, username, password));
+                }
+            }
+            return connection;
+        } catch (SQLException e) {
+            DistributorSQLExceptions.connection(e, address, port, name, username, password);
         }
         return null;
     }

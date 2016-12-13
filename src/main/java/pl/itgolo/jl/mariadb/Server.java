@@ -25,11 +25,13 @@ public class Server {
     /**
      * Start server database
      *
-     * @param path     path to directory with all databases
-     * @param port     port of server database
-     * @param name     name to database
-     * @param username username to database
-     * @param password password to database
+     * @param path           path to directory with all databases
+     * @param port           port of server database
+     * @param name           name to database
+     * @param username       username to database
+     * @param password       password to database
+     * @param resource       classpath to directory with migration files
+     * @param forceMigration true - execute force migration, false - throws exception if can execute migrations
      * @return db instance of vorburger
      * @throws DatabaseServerStartException         failed build database configuration or failed start server
      * @throws DatabaseSuperAdminException          failed set default super admin authorization or username is 'root'
@@ -37,8 +39,9 @@ public class Server {
      * @throws DatabaseServerPortException          port is busy for localhost address
      * @throws DatabaseServerDoubleRunningException attempt double running server
      * @throws DatabasePermissionDirectoryException failed permission to path
+     * @throws DatabaseMigrationsException exception for can migrate for new migration files
      */
-    public static DB start(String path, Integer port, String name, String username, String password) throws DatabaseServerStartException, DatabaseSuperAdminException, DatabaseCreateException, DatabaseServerPortException, DatabaseServerDoubleRunningException, DatabasePermissionDirectoryException {
+    public static DB start(String path, Integer port, String name, String username, String password, String resource, Boolean forceMigration) throws DatabaseServerStartException, DatabaseSuperAdminException, DatabaseCreateException, DatabaseServerPortException, DatabaseServerDoubleRunningException, DatabasePermissionDirectoryException, DatabaseMigrationsException {
         if (isLaunched(port, name, username, password)) {
             throw new DatabaseServerDoubleRunningException(String.format("Server is already running. Path: %1$s, port: %2$s, name: %3$s, username: %4$s, password: %5$s.", path, port, name, username, password));
         }
@@ -56,6 +59,7 @@ public class Server {
             throw new DatabaseServerStartException(String.format("Failed start server. Path: %1$s, port: %2$s, name: %3$s, username: %4$s, password: %5$s.", path, port, name, username, password), e);
         }
         setDefaultOrExist(port, name, username, password, db);
+        migrate(port, name, username, password, resource, forceMigration);
         return db;
     }
 
@@ -123,6 +127,27 @@ public class Server {
             Files.createDirectories(Paths.get(path));
         } catch (IOException e) {
             throw new DatabasePermissionDirectoryException(String.format("Failed permission. Can not be create directory for path: %1$s.", path), e);
+        }
+    }
+
+    /**
+     * Migrate
+     *
+     * @param port           port of server database
+     * @param name           name to database
+     * @param username       username to database
+     * @param password       password to database
+     * @param resource       classpath to directory with migration files
+     * @param forceMigration true - execute force migration, false - throws exception if can execute migrations
+     * @throws DatabaseMigrationsException exception for can migrate for new migration files
+     */
+    public static void migrate(Integer port, String name, String username, String password, String resource, Boolean forceMigration) throws DatabaseMigrationsException {
+        if (false == Migration.validate("localhost", port, name, username, password, resource)) {
+            if (forceMigration) {
+                Migration.migrate("localhost", port, name, username, password, resource);
+            } else {
+                throw new DatabaseMigrationsException(String.format("Exist new migrations. Can execute migrate. Port: %1$s, name: %2$s, username: %3$s, password: %4$s.", port, name, username, password));
+            }
         }
     }
 }

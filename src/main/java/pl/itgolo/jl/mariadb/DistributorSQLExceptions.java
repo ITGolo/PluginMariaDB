@@ -14,10 +14,10 @@ import java.sql.SQLSyntaxErrorException;
 /**
  * Created by ITGolo on 12.12.2016.
  */
-public class Distributor {
+public class DistributorSQLExceptions {
 
     /* logger */
-    private static final Logger logger = LoggerFactory.getLogger(Distributor.class);
+    private static final Logger logger = LoggerFactory.getLogger(DistributorSQLExceptions.class);
 
     /**
      * Call the appropriate exception of connection

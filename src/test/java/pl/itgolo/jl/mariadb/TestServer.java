@@ -13,6 +13,8 @@ import java.io.IOException;
  */
 public class TestServer {
 
+    static String address = "localhost";
+    static String resource = "pl/itgolo/jl/mariadb/Migrations/Examples";
     static Integer port = 7777;
     static String name = "myDatabase";
     static String username = "administrator";
@@ -20,18 +22,20 @@ public class TestServer {
     static String path = "database";
 
     @BeforeClass
-    public static void setUp() throws ManagedProcessException, IOException, DatabaseSuperAdminException, DatabaseServerStartException, DatabaseCreateException, DatabaseServerPortException, DatabaseServerDoubleRunningException, DatabasePermissionDirectoryException {
+    public static void setUp() throws ManagedProcessException, IOException, DatabaseSuperAdminException, DatabaseServerStartException, DatabaseCreateException, DatabaseServerPortException, DatabaseServerDoubleRunningException, DatabasePermissionDirectoryException, DatabaseMigrationsException {
         Manager.deleteAllDatabases(path);
-        DB db = Server.start(path, port, name, username, password);
+        DB db = Server.start(path, port, name, username, password, resource, true);
     }
 
     @Test(expected = DatabaseServerPortException.class)
-    public void test_run_server_on_open_port() throws DatabaseCreateException, DatabaseSuperAdminException, DatabaseServerStartException, DatabaseServerPortException, DatabaseServerDoubleRunningException, DatabasePermissionDirectoryException {
-        Server.start(path, port, "other_name", username, password);
+    public void test_run_server_on_open_port() throws DatabaseCreateException, DatabaseSuperAdminException, DatabaseServerStartException, DatabaseServerPortException, DatabaseServerDoubleRunningException, DatabasePermissionDirectoryException, DatabaseMigrationsException {
+        Server.start(path, port, "other_name", username, password, resource, true);
     }
 
     @Test(expected = DatabaseServerDoubleRunningException.class)
-    public void test_run_double_server() throws DatabaseServerPortException, DatabaseCreateException, DatabaseSuperAdminException, DatabaseServerStartException, DatabaseServerDoubleRunningException, DatabasePermissionDirectoryException {
-        Server.start(path, port, name, username, password);
+    public void test_run_double_server() throws DatabaseServerPortException, DatabaseCreateException, DatabaseSuperAdminException, DatabaseServerStartException, DatabaseServerDoubleRunningException, DatabasePermissionDirectoryException, DatabaseMigrationsException {
+        Server.start(path, port, name, username, password, resource, true);
     }
+
+
 }
